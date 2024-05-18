@@ -1,0 +1,13 @@
+﻿<?xml version="1.0"?>
+<package>
+  <metadata>
+    <id>UTimer</id>
+    <version>1.0.0</version>
+    <authors>Yusuf Ünal</authors>
+    <owners>Yusuf Ünal</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>A library for scheduling jobs with .NET.</description>
+    <releaseNotes>Initial release.</releaseNotes>
+    <tags>job scheduler timer</tags>
+  </metadata>
+</package>
