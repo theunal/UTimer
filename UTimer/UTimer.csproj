@@ -5,14 +5,21 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<Authors>Yusuf Ünal</Authors>
+		<Company>Yusuf Ünal</Company>
+		<PackageProjectUrl>https://github.com/theunal/UTimer</PackageProjectUrl>
+		<Description>NET Core applications to easily manage scheduled jobs. This library allows you to configure processes and run scheduled jobs in the background using Dependency Injection (DI).</Description>
+		<PackageIcon>logo.png</PackageIcon>
+		<PackageTags>job scheduler timer</PackageTags>
+		<RepositoryType>git</RepositoryType>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <None Remove=".nuspec" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Compile Include=".nuspec" />
+		<None Include="..\..\UEntity.PostgreSQL\logo.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
 	</ItemGroup>
 
 	<ItemGroup>

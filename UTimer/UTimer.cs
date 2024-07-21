@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
+using UTimer.Cronos;
 
 namespace UTimer;
 
@@ -15,11 +16,11 @@ public static class JobCreator
     /// </summary>
     /// <param name="action">The action to execute.</param>
     /// <param name="period">The delay before the action is executed.</param>
-    public static void CreateJob([NotNull] Expression<Action> action, TimeSpan? period = null)
+    public static Timer CreateJob([NotNull] Expression<Action> action, TimeSpan? period = null)
     {
         if (action is null) throw new ActionNullException("Action cannot be null.");
 
-        CreateTimerByJob(Callback.CreateTimerCallback(action), period);
+        return CreateTimerByJob(Callback.CreateTimerCallback(action), period);
     }
 
     /// <summary>
@@ -28,11 +29,11 @@ public static class JobCreator
     /// <typeparam name="T">The type parameter for the action.</typeparam>
     /// <param name="action">The action to execute.</param>
     /// <param name="period">The delay before the action is executed.</param>
-    public static void CreateJob<T>([NotNull] Expression<Action<T>> action, TimeSpan? period = null) where T : notnull
+    public static Timer CreateJob<T>([NotNull] Expression<Action<T>> action, TimeSpan? period = null) where T : notnull
     {
         if (action is null) throw new ActionNullException("Action cannot be null.");
 
-        CreateTimerByJob(Callback.CreateTimerCallback(action), period);
+        return CreateTimerByJob(Callback.CreateTimerCallback(action), period);
     }
 
     /// <summary>
@@ -85,7 +86,8 @@ public static class JobCreator
         if (period is not null)
             _ = new Timer(callback, null, TimeSpan.Zero, period!.Value);
         else
-            RunScheduledJob(callback, cronExpression!);
+            //JobScheduler.ScheduleNextRun(callback, cronExpression!);
+        RunScheduledJob(callback, cronExpression!);
     }
 
     /// <summary>
@@ -97,8 +99,10 @@ public static class JobCreator
     {
         void ScheduleNextRun()
         {
-            var nextRun = Cron.GetNextOccurrence(cronExpression, DateTime.Now);
-            var delay = nextRun - DateTime.Now;
+            var nextRun = GetNextRunTime(cronExpression);
+            if (nextRun is null) return;
+
+            var delay = nextRun.Value.ToLocalTime() - DateTime.Now;
 
             var timer = new Timer(state =>
             {
@@ -108,6 +112,46 @@ public static class JobCreator
         }
 
         ScheduleNextRun();
+    }
+
+    public static class JobScheduler
+    {
+        private static Timer? _timer;
+
+        public static void ScheduleNextRun(TimerCallback callback, string cronExpression)
+        {
+            void ScheduleNextRun()
+            {
+                var cronSchedule = CronExpression.Parse(cronExpression);
+                var nextRun = cronSchedule.GetNextOccurrence(DateTime.UtcNow);
+
+                if (nextRun.HasValue)
+                {
+                    var delay = nextRun.Value - DateTime.UtcNow;
+
+                    // Dispose the previous timer if it exists
+                    _timer?.Dispose();
+
+                    // Create a new timer to trigger the callback at the scheduled time
+                    _timer = new Timer(state =>
+                    {
+                        callback(state);
+                        ScheduleNextRun(); // Schedule the next run
+                    }, null, delay, Timeout.InfiniteTimeSpan);
+                }
+            }
+
+            ScheduleNextRun();
+        }
+    }
+
+    private static DateTime? GetNextRunTime(string cronExpression)
+    {
+        // Parse the cron expression
+        var cron = CronExpression.Parse(cronExpression);
+
+        // Get the next occurrence based on the current time
+        return cron.GetNextOccurrence(DateTime.UtcNow);
     }
 }
 
@@ -190,8 +234,7 @@ public static class Cron
 {
     public static string Minutely() => "* * * * *";
 
-    public static string Hourly() => Hourly(0);
-    public static string Hourly(int minute) => string.Format("{0} * * * *", minute);
+    public static string Hourly(int? minute = null) => string.Format("{0} * * * *", minute ?? 0);
 
     public static string Daily(int? hour = null) => hour is null ? Daily(0, 0) : Daily(hour!.Value, 0);
     public static string Daily(int hour, int minute) => string.Format("{0} {1} * * *", minute, hour);
@@ -209,43 +252,43 @@ public static class Cron
     public static string Yearly(int month, int day, int hour) => Yearly(month, day, hour, 0);
     public static string Yearly(int month, int day, int hour, int minute) => string.Format("{0} {1} {2} {3} *", minute, hour, day, month);
 
-    public static DateTime GetNextOccurrence(string cronExpression, DateTime baseTime)
-    {
-        var parts = cronExpression.Split(' ');
-        if (parts.Length != 5)
-            throw new ArgumentException("Invalid cron expression format. Expected format: 'm h d M w'");
+    //public static DateTime GetNextOccurrence(string cronExpression, DateTime baseTime)
+    //{
+    //    var parts = cronExpression.Split(' ');
+    //    if (parts.Length != 5)
+    //        throw new ArgumentException("Invalid cron expression format. Expected format: 'm h d M w'");
 
-        int minute = ParseCronField(parts[0], 0, 59, baseTime.Minute);
-        int hour = ParseCronField(parts[1], 0, 23, baseTime.Hour);
-        int day = ParseCronField(parts[2], 1, 31, baseTime.Day);
-        int month = ParseCronField(parts[3], 1, 12, baseTime.Month);
-        int dayOfWeek = ParseCronField(parts[4], 0, 6, (int)baseTime.DayOfWeek);
+    //    int minute = ParseCronField(parts[0], 0, 59, baseTime.Minute);
+    //    int hour = ParseCronField(parts[1], 0, 23, baseTime.Hour);
+    //    int day = ParseCronField(parts[2], 1, 31, baseTime.Day);
+    //    int month = ParseCronField(parts[3], 1, 12, baseTime.Month);
+    //    int dayOfWeek = ParseCronField(parts[4], 0, 6, (int)baseTime.DayOfWeek);
 
-        var nextOccurrence = new DateTime(baseTime.Year, month, day, hour, minute, 0);
+    //    var nextOccurrence = new DateTime(baseTime.Year, month, day, hour, minute, 0);
 
-        // dayOfWeek ile uyumlu bir gün bulana kadar döngüye devam et
-        while (nextOccurrence.DayOfWeek != (DayOfWeek)dayOfWeek || nextOccurrence <= baseTime)
-            nextOccurrence = nextOccurrence.AddMinutes(1);
+    //    // dayOfWeek ile uyumlu bir gün bulana kadar döngüye devam et
+    //    while (nextOccurrence.DayOfWeek != (DayOfWeek)dayOfWeek || nextOccurrence <= baseTime)
+    //        nextOccurrence = nextOccurrence.AddMinutes(1);
 
-        return nextOccurrence;
-    }
+    //    return nextOccurrence;
+    //}
 
-    private static int ParseCronField(string field, int minValue, int maxValue, int currentValue)
-    {
-        if (field == "*")
-            return currentValue;
+    //private static int ParseCronField(string field, int minValue, int maxValue, int currentValue)
+    //{
+    //    if (field == "*")
+    //        return currentValue;
 
-        if (field.Contains("*/"))
-        {
-            int interval = int.Parse(field.Substring(2));
-            return ((currentValue / interval) + 1) * interval;
-        }
+    //    if (field.Contains("*/"))
+    //    {
+    //        int interval = int.Parse(field.Substring(2));
+    //        return ((currentValue / interval) + 1) * interval;
+    //    }
 
-        if (int.TryParse(field, out int value) && value >= minValue && value <= maxValue)
-            return value;
+    //    if (int.TryParse(field, out int value) && value >= minValue && value <= maxValue)
+    //        return value;
 
-        throw new ArgumentException($"Invalid cron field value: {field}");
-    }
+    //    throw new ArgumentException($"Invalid cron field value: {field}");
+    //}
 }
 
 /// <summary>

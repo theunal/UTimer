@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34902.65
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UTimer", "UTimer\UTimer.csproj", "{F812BCE5-EF07-4481-A656-189B8DA67940}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UTimer", "UTimer\UTimer.csproj", "{F812BCE5-EF07-4481-A656-189B8DA67940}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{A4491491-461F-44C2-ABC6-87654D1C0212}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{F812BCE5-EF07-4481-A656-189B8DA67940}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F812BCE5-EF07-4481-A656-189B8DA67940}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F812BCE5-EF07-4481-A656-189B8DA67940}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A4491491-461F-44C2-ABC6-87654D1C0212}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A4491491-461F-44C2-ABC6-87654D1C0212}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A4491491-461F-44C2-ABC6-87654D1C0212}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A4491491-461F-44C2-ABC6-87654D1C0212}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
