@@ -20,7 +20,7 @@ internal static class CronParser
 
             if (Accept(ref pointer, '@'))
             {
-                var cronExpression = ParseMacro(ref pointer);
+                CronExpression? cronExpression = ParseMacro(ref pointer);
                 SkipWhiteSpaces(ref pointer);
 
                 if (cronExpression == null || !IsEndOfString(*pointer)) ThrowFormatException("Macro: Unexpected character '{0}' on position {1}.", *pointer, pointer - value);
@@ -97,7 +97,7 @@ internal static class CronParser
     }
 
     [SuppressMessage("SonarLint", "S1764:IdenticalExpressionsShouldNotBeUsedOnBothSidesOfOperators", Justification = "Expected, as the AcceptCharacter method produces side effects.")]
-    private static unsafe CronExpression ParseMacro(ref char* pointer)
+    private static unsafe CronExpression? ParseMacro(ref char* pointer)
     {
         switch (ToUpper(*pointer++))
         {
